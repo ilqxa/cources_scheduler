@@ -1,6 +1,5 @@
 from collections import defaultdict
-from itertools import product
-from typing import Any, Iterable
+from typing import Iterable
 
 from courses_scheduler.objects import (
     AcademicDiscipline,
@@ -20,97 +19,51 @@ class OptionsSet:
     ) -> None:
         self._collection = list(collection)
 
-        self._time_slot_index: dict[
-            TimeSlot,
-            set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]],
-        ] = defaultdict(set)
-        self._students_index: dict[
-            Students,
-            set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]],
-        ] = defaultdict(set)
-        self._teacher_index: dict[
-            Teacher,
-            set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]],
-        ] = defaultdict(set)
-        self._classroom_index: dict[
-            Classroom,
-            set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]],
-        ] = defaultdict(set)
-        self._discipline_index: dict[
-            AcademicDiscipline,
-            set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]],
-        ] = defaultdict(set)
+        self._time_slot_index: dict[TimeSlot, list[int]] = defaultdict(list)
+        self._students_index: dict[Students, list[int]] = defaultdict(list)
+        self._teacher_index: dict[Teacher, list[int]] = defaultdict(list)
+        self._classroom_index: dict[Classroom, list[int]] = defaultdict(list)
+        self._discipline_index: dict[AcademicDiscipline, list[int]] = defaultdict(list)
 
-    def get_options(
+        self.reindex_collection()
+
+    def __len__(self) -> int:
+        return len(self._collection)
+
+    def get_options_idx(
         self,
-        time_slot: Iterable[TimeSlot] = set(),
-        students: Iterable[Students] = set(),
-        teacher: Iterable[Teacher] = set(),
-        classroom: Iterable[Classroom] = set(),
-        academic_discipline: Iterable[AcademicDiscipline] = set(),
-    ) -> set[tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]]:
+        time_slot: Iterable[TimeSlot] | None = None,
+        students: Iterable[Students] | None = None,
+        teacher: Iterable[Teacher] | None = None,
+        classroom: Iterable[Classroom] | None = None,
+        academic_discipline: Iterable[AcademicDiscipline] | None = None,
+    ) -> set[int]:
+        time_slot = time_slot or self._time_slot_index.keys()
+        students = students or self._students_index.keys()
+        teacher = teacher or self._teacher_index.keys()
+        classroom = classroom or self._classroom_index.keys()
+        academic_discipline = academic_discipline or self._discipline_index.keys()
+
         return (
-            set.union(*(self._time_slot_index.get(ts) or set() for ts in time_slot))
-            & set.union(*(self._students_index.get(s) or set() for s in students))
-            & set.union(*(self._teacher_index.get(t) or set() for t in teacher))
-            & set.union(*(self._classroom_index.get(c) or set() for c in classroom))
+            set.union(*(set(self._time_slot_index.get(ts)) for ts in time_slot))
+            & set.union(*(set(self._students_index.get(s)) for s in students))
+            & set.union(*(set(self._teacher_index.get(t)) for t in teacher))
+            & set.union(*(set(self._classroom_index.get(c)) for c in classroom))
             & set.union(
-                *(self._discipline_index.get(d) or set() for d in academic_discipline)
+                *(set(self._discipline_index.get(d)) for d in academic_discipline)
             )
         )
 
     def reindex_collection(self) -> None:
-        self._time_slot_index = defaultdict(set)
-        self._students_index = defaultdict(set)
-        self._teacher_index = defaultdict(set)
-        self._classroom_index = defaultdict(set)
-        self._discipline_index = defaultdict(set)
+        self._time_slot_index = defaultdict(list)
+        self._students_index = defaultdict(list)
+        self._teacher_index = defaultdict(list)
+        self._classroom_index = defaultdict(list)
+        self._discipline_index = defaultdict(list)
 
-        for element in self._collection:
-            ts, s, t, c, d = element
-            self._time_slot_index[ts].add(element)
-            self._students_index[s].add(element)
-            self._teacher_index[t].add(element)
-            self._classroom_index[c].add(element)
-            self._discipline_index[d].add(element)
-
-
-class BaseAcademicPlan(OptionsSet):
-    def __init__(
-        self,
-        students_workload: dict[Students, dict[AcademicDiscipline, int]] = {},
-        teachers_workload: dict[Teacher, dict[AcademicDiscipline, int]] = {},
-        available_classrooms: set[Classroom] = set(),
-        available_time_slots: set[TimeSlot] = set(),
-    ) -> None:
-        self.students_workload = students_workload
-        self.teachers_workload = teachers_workload
-        self.available_classrooms = available_classrooms
-        self.available_time_slots = available_time_slots
-
-    @staticmethod
-    def reverse_dict(source: dict[Any, dict[Any, int]]) -> dict[Any, dict[Any, int]]:
-        res = defaultdict(dict)
-        for i1, v1 in source.items():
-            for i2, v2 in v1.items():
-                res[i2][i1] = v2
-        return res
-
-    def build_collection(self) -> None:
-        self._collection = []
-
-        students_by_discipline = self.reverse_dict(self.students_workload)
-        teachers_by_discipline = self.reverse_dict(self.teachers_workload)
-
-        for d in set(students_by_discipline.keys()) & set(
-            teachers_by_discipline.keys()
-        ):
-            for ts, s, t, c in product(
-                self.available_time_slots,
-                students_by_discipline[d],
-                teachers_by_discipline[d],
-                self.available_classrooms,
-            ):
-                self._collection.append((ts, s, t, c, d))
-
-        self.reindex_collection()
+        for i, (ts, s, t, c, d) in enumerate(self._collection):
+            self._time_slot_index[ts].append(i)
+            self._students_index[s].append(i)
+            self._teacher_index[t].append(i)
+            self._classroom_index[c].append(i)
+            self._discipline_index[d].append(i)

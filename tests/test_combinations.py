@@ -1,6 +1,4 @@
-from random import randint
-
-from courses_scheduler.combinations import BaseAcademicPlan
+from courses_scheduler.planning import AcademicPlan
 from courses_scheduler.objects import (
     AcademicDiscipline,
     Classroom,
@@ -8,26 +6,6 @@ from courses_scheduler.objects import (
     Teacher,
     TimeSlot,
 )
-
-
-def make_students(count: int = 1) -> list[Students]:
-    return [Students(group_id=str(randint(1, 100000))) for _ in range(count)]
-
-
-def make_teachers(count: int = 1) -> list[Teacher]:
-    return [Teacher(name=str(randint(1, 100000))) for _ in range(count)]
-
-
-def make_classrooms(count: int = 1) -> list[Classroom]:
-    return [Classroom(room_number=str(randint(1, 100000))) for _ in range(count)]
-
-
-def make_disciplines(count: int = 1) -> list[AcademicDiscipline]:
-    return [AcademicDiscipline(title=str(randint(1, 100000))) for _ in range(count)]
-
-
-def make_time_slots(count: int = 1) -> list[TimeSlot]:
-    return [TimeSlot(date_from=randint(1, 100000)) for _ in range(count)]
 
 
 def test_simple_plan():
@@ -45,20 +23,24 @@ def test_simple_plan():
 
     ts = {TimeSlot(date_from=i) for i in range(10)}
     
-    ap = BaseAcademicPlan(
+    ap = AcademicPlan(
         students_workload={s_a: {d_a: 1}},
         teachers_workload={t_a: {d_a: 1}},
         available_classrooms=set([c_1]),
         available_time_slots=ts,
     )
-    ap.build_collection()
-    assert len(ap._collection) == len(ts)
+    assert len(ap.optimizer.options._collection) == len(ts)
+    assert len(ap.optimizer.vars) == len(ts)
+    assert len(ap.optimizer.teacher_discipline_equations) == 1
+    assert len(ap.optimizer.students_discipline_equations) == 1
 
-    ap = BaseAcademicPlan(
+    ap = AcademicPlan(
         students_workload={s_a: {d_a: 1}},
         teachers_workload={t_a: {d_a: 1}},
         available_classrooms={c_1, c_2},
         available_time_slots=ts,
     )
-    ap.build_collection()
-    assert len(ap._collection) == len(ts) * 2
+    assert len(ap.optimizer.options) == len(ts) * 2
+    assert len(ap.optimizer.vars) == len(ts) * 2
+    assert len(ap.optimizer.teacher_discipline_equations) == 1
+    assert len(ap.optimizer.students_discipline_equations) == 1

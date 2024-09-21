@@ -48,4 +48,4 @@ class TimeSlot(BaseModel):
         return self.date_from.__hash__()
 
     def __repr__(self) -> str:
-        return self.date_from
+        return str(self.date_from)
