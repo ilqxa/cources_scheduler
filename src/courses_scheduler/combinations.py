@@ -1,13 +1,10 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import Iterable
 
-from courses_scheduler.objects import (
-    AcademicDiscipline,
-    Classroom,
-    Students,
-    Teacher,
-    TimeSlot,
-)
+from courses_scheduler.objects import (AcademicDiscipline, Classroom, Students,
+                                       Teacher, TimeSlot)
 
 
 class OptionsSet:
@@ -29,6 +26,21 @@ class OptionsSet:
 
     def __len__(self) -> int:
         return len(self._collection)
+
+    def __getitem__(self, index) -> tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]:
+        return self._collection[index]
+
+    def __iter__(self) -> OptionsSet:
+        self.index = 0
+        return self
+
+    def __next__(self) -> tuple[TimeSlot, Students, Teacher, Classroom, AcademicDiscipline]:
+        if self.index < len(self._collection):
+            result = self._collection[self.index]
+            self.index += 1
+            return result
+        else:
+            raise StopIteration
 
     def get_options_idx(
         self,

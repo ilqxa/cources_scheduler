@@ -2,6 +2,9 @@ from collections import defaultdict
 from itertools import product
 from typing import Any
 
+from loguru import logger
+from tqdm import tqdm
+
 from courses_scheduler.combinations import OptionsSet
 from courses_scheduler.objects import (
     AcademicDiscipline,
@@ -45,13 +48,14 @@ class AcademicPlan:
         return res
 
     def build_options(self) -> OptionsSet:
+        logger.info("Start building options")
         collection = []
 
         students_by_discipline = self.reverse_dict(self.students_workload)
         teachers_by_discipline = self.reverse_dict(self.teachers_workload)
 
-        for d in set(students_by_discipline.keys()) & set(
-            teachers_by_discipline.keys()
+        for d in tqdm(
+            set(students_by_discipline.keys()) & set(teachers_by_discipline.keys())
         ):
             for ts, s, t, c in product(
                 self.available_time_slots,
@@ -64,6 +68,7 @@ class AcademicPlan:
         return OptionsSet(collection)
 
     def build_optimizer(self) -> PlanOptimizer:
+        logger.info("Start building optimizer")
         return PlanOptimizer(
             options=self.build_options(),
             students_discipline_workload=self.flat_dict(self.students_workload),
